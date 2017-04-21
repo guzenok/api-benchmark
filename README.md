@@ -1,5 +1,6 @@
 # API benchmark
 
+
 ## Run benchmarks:
 
 ```cd ./serv/; go test -bench "Bench*"; cd -``` get (for example):
@@ -18,5 +19,20 @@ BenchmarkDecode/Buger-4                   	  500000	      2162 ns/op
   - "BenchmarkHttp/..." - tests specific http-server with specific json-parser
   - "BenchmarkDecode/..." - tests specific json-parser only
 
-## Run profile
+
+## PProf
+
+(see gen_pprof_pictures.sh for details)
+
+buger/jsonparser CPU profile
+![Buger-CPU](img/BugerCPU.gif)
+
+standart encoding/json CPU profile
+![Standart-CPU](img/StandartCPU.gif)
+
+buger/jsonparser Mem profile
+![Buger-Mem](img/BugerMem.gif)
+
+standart encoding/json Mem profile
+![Standart-Mem](img/StandartMem.gif)
 
