@@ -4,63 +4,78 @@ package main
 import (
 	"bytes"
 	"flag"
-	"log"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/guzenok/api-benchmark/serv"
+	"github.com/pkg/profile"
 )
 
 var (
-	command = flag.String("act", "all", "")
-
-	URL = ":3000"
-
-	testServers = map[string]serv.HandleCreator{
-		"Gin": serv.GinHandler,
-		"Chi": serv.ChiHandler,
-	}
-
-	testDecodes = map[string]serv.DecodeFunc{
-		"Standart": serv.DecodeStandart,
-		"Buger":    serv.DecodeBuger,
-	}
-
-	testEncodes = map[string]serv.EncodeFunc{
-		"Standart": serv.EncodeStandart,
-		"Buger":    serv.EncodeBuger,
-	}
+	pprof    = flag.String("pprof", "Mem", "Which profile use (CPU, Mem, Block, Trace or Mutex)")
+	httpserv = flag.String("httpserv", "Gin", "Which type of http-server use (Gin or Chi)")
+	parser   = flag.String("parser", "Buger", "Which type of http-server use (Standart or Buger)")
 )
 
 func main() {
+	// разбор аргументов
 	flag.Parse()
 
-	TestAll(1000000)
+	// выбор профилировщика
+	pprofOpt, found := map[string]func(*profile.Profile){
+		"CPU":   profile.CPUProfile,
+		"Mem":   profile.MemProfile,
+		"Block": profile.BlockProfile,
+		"Mutex": profile.MutexProfile,
+		"Trace": profile.TraceProfile,
+	}[*pprof]
+	if !found {
+		flag.PrintDefaults()
+		return
+	}
+	defer profile.Start(profile.ProfilePath("."), pprofOpt).Stop()
 
-}
+	// выбор http-обработчика
+	handleCreate, found := serv.HttpHandlerList[*httpserv]
+	if !found {
+		flag.PrintDefaults()
+		return
+	}
 
-func TestAll(N int) {
-	for serverName, handleCreate := range testServers {
-		for decoderName, decodeFunc := range testDecodes {
-			encodeFunc, _ := testEncodes[decoderName]
-			log.Println("==================================================")
-			log.Printf("Testing %s with %s\n", serverName, decoderName)
-			// запуск сервера
-			stop := serv.HttpServe(URL, handleCreate(decodeFunc, encodeFunc))
-			time.Sleep(time.Second) // пусть устаканится
-			// время начала
-			start := time.Now()
-			// тело запроса
-			for i := 0; i < N; i++ {
-				b := serv.NewTransferRequest().ToJSON()
-				body := bytes.NewReader(b)
-				serv.HttpGet(URL, body)
-			}
-			// время завершения
-			finish := time.Now()
-			// остановка сервера
-			stop()
-			time.Sleep(time.Second) // пусть устаканится
-			log.Printf(" takes %d microSecond\n", int64(finish.Sub(start)/time.Microsecond)/int64(N))
+	// выбор json-парсера
+	decodeFunc, found := serv.DecodesList[*parser]
+	if !found {
+		flag.PrintDefaults()
+		return
+	}
+	encodeFunc := serv.EncodesList[*parser]
+
+	// info
+	fmt.Printf("Start %s at http://localhost%s (parser %s)\n", *httpserv, serv.URL, *parser)
+
+	// OS Signal
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	// start http-server
+	stop := serv.HttpServe(serv.URL, handleCreate(decodeFunc, encodeFunc))
+	defer stop()
+	time.Sleep(time.Second) // пусть устаканится
+	// бесконечные запросы к серверу
+	data := serv.NewTransferRequest().ToJSON()
+Infinity:
+	for {
+		select {
+		case <-sigs:
+			break Infinity
+		default:
+			break
 		}
+		body := bytes.NewReader(data)
+		serv.HttpGet(serv.URL, body)
+		time.Sleep(time.Millisecond)
 	}
 }
