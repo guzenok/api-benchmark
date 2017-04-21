@@ -13,6 +13,11 @@ import (
 
 type HandleCreator func(DecodeFunc, EncodeFunc) http.Handler
 
+var HttpHandlerList = map[string]HandleCreator{
+	"Gin": GinHandler,
+	"Chi": ChiHandler,
+}
+
 func ChiHandler(decode DecodeFunc, encode EncodeFunc) http.Handler {
 	r := chi.NewRouter()
 	r.Post("/", func(w http.ResponseWriter, r *http.Request) {

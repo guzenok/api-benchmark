@@ -10,7 +10,7 @@ func nothing(_ ...interface{}) {}
 
 func BenchmarkDecode(b *testing.B) {
 	data := NewTransferRequest().ToJSON()
-	for decoderName, decodeFunc := range testDecodes {
+	for decoderName, decodeFunc := range DecodesList {
 		b.Run(decoderName, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				tr, _ := decodeFunc(data)

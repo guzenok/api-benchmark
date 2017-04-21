@@ -8,6 +8,10 @@ import (
 	"net/http"
 )
 
+const (
+	URL = ":3000"
+)
+
 func HttpServe(addr string, handler http.Handler) func() {
 
 	srv := &http.Server{

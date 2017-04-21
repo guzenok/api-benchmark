@@ -10,6 +10,18 @@ import (
 type DecodeFunc func([]byte) (*TransferRequest, error)
 type EncodeFunc func(interface{}) ([]byte, error)
 
+var (
+	DecodesList = map[string]DecodeFunc{
+		"Standart": DecodeStandart,
+		"Buger":    DecodeBuger,
+	}
+
+	EncodesList = map[string]EncodeFunc{
+		"Standart": EncodeStandart,
+		"Buger":    EncodeBuger,
+	}
+)
+
 // Standart implementation
 
 func DecodeStandart(data []byte) (tr *TransferRequest, err error) {
@@ -70,6 +82,6 @@ func DecodeBuger(data []byte) (tr *TransferRequest, err error) {
 }
 
 func EncodeBuger(obj interface{}) ([]byte, error) {
-	// jsonparser can't encode
+	// buger/jsonparser can't encode
 	return EncodeStandart(obj)
 }

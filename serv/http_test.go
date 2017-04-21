@@ -8,29 +8,11 @@ import (
 )
 
 // Test data
-var (
-	URL = ":3000"
-
-	testServers = map[string]HandleCreator{
-		"Gin": GinHandler,
-		"Chi": ChiHandler,
-	}
-
-	testDecodes = map[string]DecodeFunc{
-		"Standart": DecodeStandart,
-		"Buger":    DecodeBuger,
-	}
-
-	testEncodes = map[string]EncodeFunc{
-		"Standart": EncodeStandart,
-		"Buger":    EncodeBuger,
-	}
-)
 
 func BenchmarkHttp(b *testing.B) {
-	for serverName, handleCreate := range testServers {
-		for decoderName, decodeFunc := range testDecodes {
-			encodeFunc, _ := testEncodes[decoderName]
+	for serverName, handleCreate := range HttpHandlerList {
+		for decoderName, decodeFunc := range DecodesList {
+			encodeFunc, _ := EncodesList[decoderName]
 			// запуск http-сервера
 			stop := HttpServe(URL, handleCreate(decodeFunc, encodeFunc))
 			time.Sleep(time.Second) // пусть устаканится
