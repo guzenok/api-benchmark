@@ -4,7 +4,7 @@ package main
 import (
 	"bytes"
 	"flag"
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/guzenok/api-benchmark/serv"
@@ -33,8 +33,7 @@ var (
 
 func main() {
 	flag.Parse()
-
-	TestAll(1000000)
+	TestAll(100000)
 
 }
 
@@ -42,8 +41,7 @@ func TestAll(N int) {
 	for serverName, handleCreate := range testServers {
 		for decoderName, decodeFunc := range testDecodes {
 			encodeFunc, _ := testEncodes[decoderName]
-			log.Println("==================================================")
-			log.Printf("Testing %s with %s\n", serverName, decoderName)
+			fmt.Printf("%s + %s\t= ", serverName, decoderName)
 			// запуск сервера
 			stop := serv.HttpServe(URL, handleCreate(decodeFunc, encodeFunc))
 			time.Sleep(time.Second) // пусть устаканится
@@ -60,7 +58,7 @@ func TestAll(N int) {
 			// остановка сервера
 			stop()
 			time.Sleep(time.Second) // пусть устаканится
-			log.Printf(" takes %d microSecond\n", int64(finish.Sub(start)/time.Microsecond)/int64(N))
+			fmt.Printf("%d microSecond per request\n", int64(finish.Sub(start)/time.Microsecond)/int64(N))
 		}
 	}
 }
